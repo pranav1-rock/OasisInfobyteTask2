@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Online Reservation System with Chatbot</title>
+<style>
+  /* Reset & base */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f8fafc;
+    scroll-behavior: smooth;
+    color: #333;
+  }
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: #2c3e50;
+    color: white;
+    padding: 15px 10%;
+    z-index: 10000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  header nav a {
+    color: white;
+    margin: 0 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+  }
+  header nav a:hover {
+    color: #1abc9c;
+  }
+  section {
+    padding: 120px 10% 60px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  section:nth-child(odd) {
+    background: #fff;
+  }
+  section:nth-child(even) {
+    background: #e9f0f4;
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-weight: 700;
+    color: #2c3e50;
+    letter-spacing: 1px;
+  }
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  input, select, button {
+    width: 100%;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    border: 1.8px solid #ccc;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 10px rgba(26,188,156,0.4);
+  }
+  button.primary {
+    background: #1abc9c;
+    border: none;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button.primary:hover {
+    background: #16a085;
+  }
+  #pnrResult {
+    display: none;
+    background: #d1f2eb;
+    border-left: 6px solid #1abc9c;
+    padding: 20px;
+    border-radius: 8px;
+  }
+  #pnrResult p {
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #117a65;
+  }
+  #pnrResult button {
+    max-width: 100px;
+    margin-top: 10px;
+  }
+
+  /* Chat icon */
+  .chat-icon {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background: #1abc9c;
+    color: white;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    font-size: 32px;
+    text-align: center;
+    line-height: 65px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(26,188,156,0.6);
+    z-index: 9999;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  .chat-icon:hover {
+    background: #16a085;
+  }
+
+  /* Chatbot window */
+  .chatbot {
+    position: fixed;
+    bottom: 100px;
+    right: 25px;
+    width: 350px;
+    max-height: 450px;
+    background: white;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    border-radius: 12px;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9999;
+    animation: fadeInUp 0.4s ease forwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .chat-header {
+    background: #1abc9c;
+    color: white;
+    padding: 15px 20px;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  .chat-body {
+    padding: 15px 20px;
+    flex: 1;
+    overflow-y: auto;
+    font-size: 0.95rem;
+  }
+  .chat-body p {
+    margin: 10px 0;
+    max-width: 80%;
+    line-height: 1.4;
+  }
+  .chat-body .bot {
+    background: #e1f0ef;
+    color: #155d50;
+    padding: 12px 16px;
+    border-radius: 20px 20px 20px 5px;
+    align-self: flex-start;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .chat-body .user {
+    background: #1abc9c;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 20px 20px 5px 20px;
+    align-self: flex-end;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  .chat-input {
+    display: flex;
+    border-top: 1px solid #ddd;
+  }
+  .chat-input input {
+    flex: 1;
+    padding: 14px 18px;
+    border: none;
+    font-size: 1rem;
+  }
+  .chat-input input:focus {
+    outline: none;
+  }
+  .chat-input button {
+    background: #1abc9c;
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 0 18px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+  }
+  .chat-input button:hover {
+    background: #16a085;
+  }
+
+  /* Social icons in contact */
+  .socials a {
+    font-size: 1.8rem;
+    margin: 0 10px;
+    color: #1abc9c;
+    transition: color 0.3s ease;
+    text-decoration: none;
+  }
+  .socials a:hover {
+    color: #16a085;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    section {
+      padding: 110px 5% 60px;
+    }
+    header {
+      padding: 12px 5%;
+    }
+    .container {
+      max-width: 100%;
+    }
+    .chatbot {
+      width: 90vw;
+      right: 5vw;
+      bottom: 90px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div><strong>RESERVATION SYSTEM</strong></div>
+  <nav>
+    <a href="#login">Login</a>
+    <a href="#reservation">Reserve</a>
+    <a href="#cancel">Cancel</a>
+    <a href="#contacts">Contact</a>
+  </nav>
+</header>
+
+<section id="login" aria-label="Login section">
+  <h2>Login</h2>
+  <div class="container">
+    <input type="text" id="loginUser" placeholder="Username" aria-label="Username" autocomplete="username" />
+    <input type="password" id="loginPass" placeholder="Password" aria-label="Password" autocomplete="current-password" />
+    <button class="primary" onclick="login()" aria-label="Login button">Login</button>
+  </div>
+</section>
+
+<section id="reservation" aria-label="Reservation section">
+  <h2>Make a Reservation</h2>
+  <div class="container">
+    <input type="text" placeholder="Full Name" id="custName" aria-label="Full Name" />
+    <input type="number" placeholder="Train Number" id="trainNumber" oninput="fillTrainName(this.value)" aria-label="Train Number" />
+    <input type="text" id="trainName" placeholder="Train Name" readonly aria-label="Train Name" />
+    <select id="classType" aria-label="Select Class Type">
+      <option value="" disabled selected>Select Class</option>
+      <option value="Sleeper">Sleeper</option>
+      <option value="AC">AC</option>
+      <option value="General">General</option>
+    </select>
+    <input type="date" id="journeyDate" aria-label="Date of Journey" />
+    <input type="text" placeholder="From (Place)" id="fromPlace" aria-label="From place" />
+    <input type="text" placeholder="To (Destination)" id="toPlace" aria-label="To place" />
+    <button class="primary" onclick="insertReservation()" aria-label="Insert reservation">Insert</button>
+  </div>
+</section>
+
+<section id="cancel" aria-label="Cancellation section">
+  <h2>Cancel Reservation</h2>
+  <div class="container">
+    <input type="text" id="pnr" placeholder="Enter PNR Number" aria-label="PNR Number" />
+    <button class="primary" onclick="fetchPNR()" aria-label="Submit PNR">Submit</button>
+    <div id="pnrResult" role="region" aria-live="polite" aria-atomic="true" tabindex="0">
+      <p><strong>Name:</strong> John Doe</p>
+      <p><strong>Train:</strong> Express 101</p>
+      <p><strong>Date:</strong> 2025-07-10</p>
+      <button class="primary" onclick="cancelPNR()" aria-label="Confirm Cancellation">OK</button>
+    </div>
+  </div>
+</section>
+
+<section id="contacts" aria-label="Contact section">
+  <h2>Contact Us</h2>
+  <div class="container contact-info">
+    <p><strong>Email:</strong> support@example.com</p>
+    <p><strong>Phone:</strong> +91‑9876543210</p>
+    <p><strong>Address:</strong> Secunderabad, Telangana, India</p>
+    <div class="socials" aria-label="Social Media Links">
+      <a href="#" title="Facebook" aria-label="Facebook">👍</a>
+      <a href="#" title="Twitter" aria-label="Twitter">🐦</a>
+      <a href="#" title="Instagram" aria-label="Instagram">📸</a>
+      <a href="#" title="LinkedIn" aria-label="LinkedIn">💼</a>
+    </div>
+  </div>
+</section>
+
+<!-- Chat icon -->
+<div class="chat-icon" role="button" tabindex="0" aria-label="Open chatbot" onclick="toggleChat()" onkeypress="if(event.key==='Enter'){toggleChat()}">💬</div>
+
+<!-- Chatbot window -->
+<div class="chatbot" id="chatbot" role="dialog" aria-modal="true" aria-labelledby="chatHeader">
+  <div class="chat-header" id="chatHeader">Help Bot</div>
+  <div class="chat-body" id="chatBody" tabindex="0" aria-live="polite" aria-atomic="false">
+    <p class="bot"><em>Hi! I’m your assistant. How can I help you today?</em></p>
+  </div>
+  <div class="chat-input">
+    <input type="text" id="userMessage" placeholder="Type your message..." aria-label="Chat message input" onkeypress="if(event.key==='Enter'){sendMessage()}" />
+    <button onclick="sendMessage()" aria-label="Send message">Send</button>
+  </div>
+</div>
+
+<script>
+  // Context to store login & reservation states
+  let context = {
+    loggedIn: false,
+    lastReservation: null,
+    lastPNR: null,
+  };
+
+  // Login function
+  function login() {
+    const username = document.getElementById('loginUser').value.trim();
+    const password = document.getElementById('loginPass').value.trim();
+
+    if (username === 'admin' && password === 'admin') {
+      context.loggedIn = true;
+      alert('Login successful! You can now make reservations.');
+      location.href = '#reservation';
+    } else {
+      alert('Invalid credentials. Please use username: admin and password: admin');
+    }
+  }
+
+  // Fill train name based on train number
+  function fillTrainName(number) {
+    const trainMap = {
+      '101': 'Superfast Express',
+      '102': 'Rajdhani Express',
+      '103': 'Shatabdi Express',
+      '104': 'Duronto Express',
+      '105': 'Garib Rath',
+    };
+    document.getElementById('trainName').value = trainMap[number] || '';
+  }
+
+  // Insert reservation simulation
+  function insertReservation() {
+    if (!context.loggedIn) {
+      alert('Please login first before making a reservation.');
+      location.href = '#login';
+      return;
+    }
+    const name = document.getElementById('custName').value.trim();
+    const trainName = document.getElementById('trainName').value.trim();
+    const classType = document.getElementById('classType').value;
+    const journeyDate = document.getElementById('journeyDate').value;
+    const fromPlace = document.getElementById('fromPlace').value.trim();
+    const toPlace = document.getElementById('toPlace').value.trim();
+
+    if (!name || !trainName || !classType || !journeyDate || !fromPlace || !toPlace) {
+      alert('Please fill all fields before submitting your reservation.');
+      return;
+    }
+
+    // Store last reservation in context (simulate database save)
+    context.lastReservation = { name, trainName, classType, journeyDate, fromPlace, toPlace };
+
+    alert(`Reservation for ${name} on ${trainName} (${classType}) on ${journeyDate} from ${fromPlace} to ${toPlace} saved successfully!`);
+    // Clear form fields after insert
+    document.getElementById('custName').value = '';
+    document.getElementById('trainNumber').value = '';
+    document.getElementById('trainName').value = '';
+    document.getElementById('classType').value = '';
+    document.getElementById('journeyDate').value = '';
+    document.getElementById('fromPlace').value = '';
+    document.getElementById('toPlace').value = '';
+  }
+
+  // Fetch PNR info simulation
+  function fetchPNR() {
+    const pnr = document.getElementById('pnr').value.trim();
+    if (pnr === '') {
+      alert('Please enter a PNR number.');
+      return;
+    }
+    // Simulate fetching from database:
+    if (pnr === '123456') {
+      document.getElementById('pnrResult').style.display = 'block';
+      context.lastPNR = {
+        name: 'John Doe',
+        train: 'Express 101',
+        date: '2025-07-10',
+        pnr,
+      };
+      document.getElementById('pnrResult').focus();
+    } else {
+      alert('PNR number not found.');
+      document.getElementById('pnrResult').style.display = 'none';
+      context.lastPNR = null;
+    }
+  }
+
+  // Confirm cancellation simulation
+  function cancelPNR() {
+    if (context.lastPNR) {
+      alert(`Ticket with PNR ${context.lastPNR.pnr} has been cancelled.`);
+      context.lastPNR = null;
+      document.getElementById('pnrResult').style.display = 'none';
+      document.getElementById('pnr').value = '';
+    } else {
+      alert('No PNR selected for cancellation.');
+    }
+  }
+
+  // Chatbot toggle
+  function toggleChat() {
+    const chat = document.getElementById('chatbot');
+    chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
+    if(chat.style.display === 'flex') {
+      document.getElementById('userMessage').focus();
+    }
+  }
+
+  // Send message in chatbot
+  function sendMessage() {
+    const input = document.getElementById('userMessage');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const chatBody = document.getElementById('chatBody');
+    // User message
+    chatBody.innerHTML += `<p class="user"><strong>You:</strong> ${escapeHtml(msg)}</p>`;
+
+    // Generate bot reply
+    const reply = generateReply(msg);
+    chatBody.innerHTML += `<p class="bot"><strong>Bot:</strong> ${escapeHtml(reply)}</p>`;
+
+    input.value = '';
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  // Escape HTML to prevent injection
+  function escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;',
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+  }
+
+  // Simple chatbot reply logic with context awareness
+  function generateReply(msg) {
+    msg = msg.toLowerCase();
+
+    if(msg.includes('hello') || msg.includes('hi')) {
+      return "Hello! How can I assist you with your reservations today?";
+    }
+    if(msg.includes('login')) {
+      return context.loggedIn ? "You are already logged in." : "Please login using the Login section with username 'admin' and password 'admin'.";
+    }
+    if(msg.includes('reserve') || msg.includes('booking')) {
+      return context.loggedIn
+        ? "You can make a reservation in the 'Make a Reservation' section. Fill in your details and click 'Insert'."
+        : "Please login first to make a reservation.";
+    }
+    if(msg.includes('cancel')) {
+      return "To cancel a reservation, enter your PNR number in the 'Cancel Reservation' section and submit.";
+    }
+    if(msg.includes('thank')) {
+      return "You're welcome! If you need more help, just ask.";
+    }
+    if(msg.includes('help')) {
+      return "I can assist you with login, booking, cancellation, and general info. What do you want to do?";
+    }
+    if(msg.includes('contact')) {
+      return "You can find our contact details in the Contact section at the bottom.";
+    }
+
+    // If user asks about last reservation
+    if(msg.includes('my last reservation') || msg.includes('last booking')) {
+      if (context.lastReservation) {
+        const r = context.lastReservation;
+        return `Your last reservation was on train ${r.trainName} (${r.classType}) from ${r.fromPlace} to ${r.toPlace} on ${r.journeyDate}.`;
+      } else {
+        return "You haven't made any reservations yet.";
+      }
+    }
+
+    return "Sorry, I didn't understand that. You can ask me about login, reservations, cancellation, or contact info.";
+  }
+</script>
+
+</body>
+</html>
